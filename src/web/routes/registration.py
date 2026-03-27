@@ -439,6 +439,16 @@ def _run_sync_registration_task(task_uuid: str, email_service_type: str, proxy: 
 
             # 执行注册
             result = engine.run()
+            marker = getattr(email_service, "mark_registration_outcome", None)
+            marker_context = {}
+            try:
+                info = getattr(engine, "email_info", None) or {}
+                for key in ("service_id", "order_no", "token", "purchase_id", "source"):
+                    value = info.get(key) if isinstance(info, dict) else None
+                    if value not in (None, ""):
+                        marker_context[key] = value
+            except Exception:
+                marker_context = {}
 
             if result.success:
                 # 更新代理使用时间
@@ -446,6 +456,16 @@ def _run_sync_registration_task(task_uuid: str, email_service_type: str, proxy: 
 
                 # 保存到数据库
                 engine.save_to_database(result)
+
+                if callable(marker) and result.email:
+                    try:
+                        marker(
+                            email=result.email,
+                            success=True,
+                            context=marker_context,
+                        )
+                    except Exception as mark_err:
+                        logger.warning(f"记录邮箱成功状态失败: {mark_err}")
 
                 # 自动上传到 CPA（可多服务）
                 if auto_upload_cpa:
@@ -543,6 +563,17 @@ def _run_sync_registration_task(task_uuid: str, email_service_type: str, proxy: 
 
                 logger.info(f"注册任务完成: {task_uuid}, 邮箱: {result.email}")
             else:
+                if callable(marker) and result.email:
+                    try:
+                        marker(
+                            email=result.email,
+                            success=False,
+                            reason=result.error_message or "",
+                            context=marker_context,
+                        )
+                    except Exception as mark_err:
+                        logger.warning(f"记录邮箱失败状态失败: {mark_err}")
+
                 # 更新任务状态为失败
                 crud.update_registration_task(
                     db, task_uuid,
