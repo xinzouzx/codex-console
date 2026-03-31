@@ -234,6 +234,11 @@ docker load -i codex-console-linux-amd64.oci.tar
 - 这条 CI 会始终按 `linux/amd64` 平台构建镜像。
 - 如果仓库是公开仓库，GitHub Actions 通常够用；私有仓库则要留意 Actions 分钟数和 artifact 存储额度。
 - 如果你还需要同步推送到 GHCR，可在仓库 Secrets 中额外配置 `GHCR_TOKEN`；未配置时 workflow 会优先尝试使用默认的 `GITHUB_TOKEN`。
+- 如果你还需要同步推送到 Docker Hub，请在仓库 `Settings -> Secrets and variables -> Actions` 中配置：
+  - `Repository secrets`: `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`
+  - `Repository variables`: `DOCKERHUB_IMAGE_NAME`
+- `DOCKERHUB_USERNAME` 建议填写 Docker Hub 账号名而不是邮箱，邮箱登录在部分环境下可能不稳定。
+- 只有当 `DOCKERHUB_TOKEN` 和 `DOCKERHUB_IMAGE_NAME` 都存在时，workflow 才会额外推送 Docker Hub。
 
 ## 使用远程 PostgreSQL
 
