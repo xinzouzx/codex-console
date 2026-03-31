@@ -210,6 +210,31 @@ docker run -d \
 
 `-v $(pwd)/data:/app/data` 很重要，这会把数据库和账号数据持久化到宿主机。否则容器一重启，数据也可能跟着表演消失术。
 
+### 使用 GitHub Actions 导出 linux/amd64 镜像文件
+
+如果本机没有 Docker / WSL，也可以直接在 GitHub Actions 中构建并下载镜像归档。
+
+1. 将代码推送到你自己的 GitHub 仓库。
+2. 打开仓库的 `Actions` 页面。
+3. 选择 `Docker Image CI`。
+4. 点击 `Run workflow` 手动触发。
+5. 等待任务完成后，在当前 workflow run 的 `Artifacts` 中下载 `codex-console-linux-amd64-image`。
+
+这份 artifact 内包含 `codex-console-linux-amd64.oci.tar`，是 `linux/amd64` 的 OCI 镜像归档。
+
+在支持容器工具的机器上，可以按下面方式导入：
+
+```bash
+# Docker / Podman 兼容环境
+docker load -i codex-console-linux-amd64.oci.tar
+```
+
+补充说明：
+
+- 这条 CI 会始终按 `linux/amd64` 平台构建镜像。
+- 如果仓库是公开仓库，GitHub Actions 通常够用；私有仓库则要留意 Actions 分钟数和 artifact 存储额度。
+- 如果你还需要同步推送到 GHCR，可在仓库 Secrets 中额外配置 `GHCR_TOKEN`；未配置时 workflow 会优先尝试使用默认的 `GITHUB_TOKEN`。
+
 ## 使用远程 PostgreSQL
 
 ```bash
